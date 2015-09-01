@@ -1,0 +1,157 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>CSS style support</title>
+<link href="http://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
+<style type="text/css">
+body {
+	font-family: Lato, sans-serif, arial;
+}
+table {
+/*	border-collapse:collapse;	*/
+}
+th, td {
+	padding: 0.4em;
+}
+table thead th {
+	font-family: "Open Sans", sans-serif, arial;
+	width:16%;
+}
+tbody tr td:first-child {
+	font-weight:bold;
+}
+tbody td {
+	font-size: 0.8em;
+	font-family: Lato, sans-serif, arial;
+}
+tbody td.false {
+	background-color:#fee;
+	color:#600;
+	text-align:center;
+}
+tbody td.true {
+	background-color:#efe;
+}
+tbody tr:hover td {
+	background-color:#ddf;
+	color:#246;
+}
+tr.irreg {
+	background-color:#ff6;
+}
+textarea { width:100%;height: 25em;}
+.bld {font-weight:bold}
+</style>
+<script type="text/javascript" src="src/common.js"> </script>
+<script type="text/javascript" src="src/styleData.js"> </script>
+</head>
+
+<body>
+<script>
+// compile support object from styleData
+var styleObj = {}, allStylesArr=[], unusedProps=[], data, br, bb, p, pp, prop;
+for (br in styleData) {
+	data = styleData[br];
+//	console.log(data);
+	for (p in data) {
+//		console.log(data[p]);
+		camelized = (""+data[p]).camelize();
+		tostring = ""+p.charAt(0).toLowerCase()+p.substring(1);
+		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="") allStylesArr.push(camelized);
+		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="") allStylesArr.push(tostring);
+	}
+}
+allStylesArr.sort();
+stylesNonPre = [];
+allStylesArr.forEach(function(st){
+	if (!/^(webkit|Webkit|O|o[A-Z]|Ms|ms|Moz|moz|apple|Apple|Wap).*?$/.test(st)) stylesNonPre.push(st);
+});
+console.log(allStylesArr);
+console.log(stylesNonPre);
+allStylesArr.forEach(function(asa) {
+	styleObj[asa] = [];
+});
+// now populate the styleObj with values from styleData
+for (bb in styleData) {
+	data = styleData[bb];
+	for (pp in data) {
+		tostring = ""+pp;
+		if (styleObj[pp] && tostring.indexOf("-")<0 && !pp.match(/\d+/)) styleObj[pp].push({browser:bb, value:data[pp]});
+//		else console.log({browser:br, value:data[p]});
+	}
+}
+/*
+// show all properties of compiled style object
+for (prop in styleObj) {
+	propStr = ""+prop.dasherize();
+	console.log(propStr+": ", styleObj[prop])
+}
+*/
+// remove errors / empty values (difference between Webkit- and webkit- (?) )
+for (prop in styleObj) {
+	if (styleObj[prop].length==0) {
+		unusedProps.push(prop.dasherize());
+		delete styleObj[prop];
+	}
+}
+function getSupportedStatus(propSupArr, bProp) {
+	retVal = false
+	propSupArr.forEach(function(pr){
+		if (bProp==pr.browser) retVal = true;
+	});
+	return retVal;
+}
+function getDefaultValue(propDefArr, brProp) {
+	retVal = "N/A";
+	propDefArr.forEach(function(prv){
+		if (brProp==prv.browser) {
+			strVal = (""+prv.value).dasherize();
+			retVal = strVal;
+		}
+	});
+	return retVal;
+}
+function getPrefixedAndUnprefixedValues(prp) {
+	for (d in styleData) {
+		
+	}
+}
+html = '<table><thead><tr><th>property</th><th>Chrome</th><th>Firefox</th><th>Opera</th><th>IE</th><th>Safari</th></tr></thead><tbody>';
+for (prop in styleObj) {
+	propsArr = styleObj[prop];
+	propStr = ""+prop.dasherize();
+	irregValues = false;
+	if (propsArr.length>1) {
+		valsArr = [];
+		propsArr.forEach(function(prp){
+			valsArr.push(prp.value);
+		});
+		for(var i = valsArr.length - 1; i > 0; i--) {
+			if(valsArr[i] === valsArr[0]) {
+			   valsArr.splice(i, 1);
+			}
+		}
+//		console.log(prop, ": ", valsArr);
+		if (valsArr.length>1) irregValues = true;
+	}
+	html += '<tr'+(irregValues === true ?  ' class="irreg"' : '')+'>'+
+	// property name
+	'<td>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>'+
+	'<td class="'+getSupportedStatus(propsArr, "Chrome")+'">'+((getSupportedStatus(propsArr, "Chrome")==true && getDefaultValue(propsArr, "Chrome")=="") ? "\"\"" : getDefaultValue(propsArr, "Chrome"))+'</td>'+
+	'<td class="'+getSupportedStatus(propsArr, "Firefox")+'">'+((getSupportedStatus(propsArr, "Firefox")==true && getDefaultValue(propsArr, "Firefox")=="") ? "\"\"" : getDefaultValue(propsArr, "Firefox"))+'</td>'+
+	'<td class="'+getSupportedStatus(propsArr, "Opera")+'">'+((getSupportedStatus(propsArr, "Opera")==true && getDefaultValue(propsArr, "Opera")=="") ? "\"\"" : getDefaultValue(propsArr, "Opera"))+'</td>'+
+	'<td class="'+getSupportedStatus(propsArr, "IE")+'">'+((getSupportedStatus(propsArr, "IE")==true && getDefaultValue(propsArr, "IE")=="") ? "\"\"" : getDefaultValue(propsArr, "IE"))+'</td>'+
+	'<td class="'+getSupportedStatus(propsArr, "Safari")+'">'+((getSupportedStatus(propsArr, "Safari")==true && getDefaultValue(propsArr, "Safari")=="") ? "\"\"" : getDefaultValue(propsArr, "Safari"))+'</td></tr>';
+//	console.log(propStr+": ", styleObj[prop])
+}
+html += '</tbody></table>';
+document.body.insertAdjacentHTML('beforeend', html);
+document.body.insertAdjacentHTML('beforeend', '<p class="bld">Non-prefixed properties</p><textarea>'+JSON.stringify(stylesNonPre)+'</textarea>');
+document.body.insertAdjacentHTML('beforeend', '<p class="bld">Unused properties</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
+document.body.insertAdjacentHTML('beforeend', '<p class="bld">All properties</p><textarea>'+JSON.stringify(allStylesArr)+'</textarea>');
+//	console.log(styleObj);
+</script>
+</body>
+</html>
