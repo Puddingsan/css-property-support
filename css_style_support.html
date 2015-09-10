@@ -25,6 +25,7 @@ tbody tr td:first-child {
 tbody td {
 	font-size: 0.8em;
 	font-family: Lato, sans-serif, arial;
+	padding-left: 28px;
 }
 tbody td.false {
 	background-color:#fee;
@@ -35,10 +36,32 @@ tbody td.true {
 	background-color:#efe;
 }
 tbody tr:hover td {
-	background-color:#ddf;
+/*	background-color:#ddf;	*/
 	color:#246;
 }
-tr.irreg {
+tbody tr:hover td {
+	background: #ddddff none no-repeat 3% center;
+}
+tbody tr:hover td.true.chrome {
+	background-image: url(img/chrome_16x16.png);
+}
+tbody tr:hover td.true.firefox {
+	background-image: url(img/firefox_16x16.png);
+}
+tbody tr:hover td.true.ie {
+	background-image: url(img/ie_16x16.png);
+}
+tbody tr:hover td.true.safari {
+	background-image: url(img/safari_16x16.png);
+}
+tbody tr:hover td.true.opera {
+	background-image: url(img/opera_16x16.png);
+}
+tbody tr:hover td.false {
+	background: #ffeeee none!important;
+	opacity: 0.2;
+}
+tr td.irreg {
 	background-color:#ff6;
 }
 textarea { width:100%;height: 25em;}
@@ -52,24 +75,26 @@ textarea { width:100%;height: 25em;}
 <script>
 // compile support object from styleData
 var styleObj = {}, allStylesArr=[], unusedProps=[], data, br, bb, p, pp, prop;
+var vendorAnomalies = [];
 for (br in styleData) {
 	data = styleData[br];
 //	console.log(data);
 	for (p in data) {
 //		console.log(data[p]);
 		camelized = (""+data[p]).camelize();
-		tostring = ""+p.charAt(0).toLowerCase()+p.substring(1);
+//		tostring = ""+p.charAt(0).toLowerCase()+p.substring(1);
+		tostring = ""+p;
 		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="") allStylesArr.push(camelized);
 		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="") allStylesArr.push(tostring);
 	}
 }
 allStylesArr.sort();
-stylesNonPre = [];
+unprefixed = [];
 allStylesArr.forEach(function(st){
-	if (!/^(webkit|Webkit|O|o[A-Z]|Ms|ms|Moz|moz|apple|Apple|Wap).*?$/.test(st)) stylesNonPre.push(st);
+	if (!/^(webkit|Webkit|O|o[A-Z]|Ms|ms|Moz|moz|apple|Apple|Wap).*?$/.test(st)) unprefixed.push(st);
 });
 console.log(allStylesArr);
-console.log(stylesNonPre);
+console.log(unprefixed);
 allStylesArr.forEach(function(asa) {
 	styleObj[asa] = [];
 });
@@ -85,21 +110,26 @@ for (bb in styleData) {
 /*
 // show all properties of compiled style object
 for (prop in styleObj) {
-	propStr = ""+prop.dasherize();
+	propStr = ""+prop.jsStyleToCss();
 	console.log(propStr+": ", styleObj[prop])
 }
 */
 // remove errors / empty values (difference between Webkit- and webkit- (?) )
 for (prop in styleObj) {
-	if (styleObj[prop].length==0) {
-		unusedProps.push(prop.dasherize());
+	if (styleObj[prop].length==0 && styleObj[prop]!=="") {
+		console.log(prop+": "+ JSON.stringify(styleObj[prop]));
+		unusedProps.push(prop.jsStyleToCss());
 		delete styleObj[prop];
 	}
 }
 function getSupportedStatus(propSupArr, bProp) {
-	retVal = false
+	retVal = false;
+	found = false;
 	propSupArr.forEach(function(pr){
-		if (bProp==pr.browser) retVal = true;
+		if (found===false && bProp==pr.browser) {
+			retVal = true;
+			found=true;
+		}
 	});
 	return retVal;
 }
@@ -114,14 +144,16 @@ function getDefaultValue(propDefArr, brProp) {
 	return retVal;
 }
 function getPrefixedAndUnprefixedValues(prp) {
+	allProps = unprefixed;
 	for (d in styleData) {
+		dta = styleData[d];
 		
 	}
 }
 html = '<table><thead><tr><th>property</th><th>Chrome</th><th>Firefox</th><th>Opera</th><th>IE</th><th>Safari</th></tr></thead><tbody>';
 for (prop in styleObj) {
 	propsArr = styleObj[prop];
-	propStr = ""+prop.dasherize();
+	propStr = ""+prop.jsStyleToCss();
 	irregValues = false;
 	if (propsArr.length>1) {
 		valsArr = [];
@@ -136,19 +168,20 @@ for (prop in styleObj) {
 //		console.log(prop, ": ", valsArr);
 		if (valsArr.length>1) irregValues = true;
 	}
-	html += '<tr'+(irregValues === true ?  ' class="irreg"' : '')+'>'+
+	html += '<tr>'+
 	// property name
-	'<td>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>'+
-	'<td class="'+getSupportedStatus(propsArr, "Chrome")+'">'+((getSupportedStatus(propsArr, "Chrome")==true && getDefaultValue(propsArr, "Chrome")=="") ? "\"\"" : getDefaultValue(propsArr, "Chrome"))+'</td>'+
-	'<td class="'+getSupportedStatus(propsArr, "Firefox")+'">'+((getSupportedStatus(propsArr, "Firefox")==true && getDefaultValue(propsArr, "Firefox")=="") ? "\"\"" : getDefaultValue(propsArr, "Firefox"))+'</td>'+
-	'<td class="'+getSupportedStatus(propsArr, "Opera")+'">'+((getSupportedStatus(propsArr, "Opera")==true && getDefaultValue(propsArr, "Opera")=="") ? "\"\"" : getDefaultValue(propsArr, "Opera"))+'</td>'+
-	'<td class="'+getSupportedStatus(propsArr, "IE")+'">'+((getSupportedStatus(propsArr, "IE")==true && getDefaultValue(propsArr, "IE")=="") ? "\"\"" : getDefaultValue(propsArr, "IE"))+'</td>'+
-	'<td class="'+getSupportedStatus(propsArr, "Safari")+'">'+((getSupportedStatus(propsArr, "Safari")==true && getDefaultValue(propsArr, "Safari")=="") ? "\"\"" : getDefaultValue(propsArr, "Safari"))+'</td></tr>';
+	'<td'+(irregValues === true ?  ' class="irreg"' : '')+'>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>';
+	["Chrome", "Firefox", "Opera", "IE", "Safari"].forEach(function(bn){
+		supStatus = getSupportedStatus(propsArr, bn);
+		defVal = getDefaultValue(propsArr, bn);
+		html += '<td class="'+supStatus+' '+bn.toLowerCase()+'">'+((supStatus==true && defVal=="") ? "\"\"" : defVal)+'</td>';
+	});
+	html += '</tr>';
 //	console.log(propStr+": ", styleObj[prop])
 }
 html += '</tbody></table>';
 document.body.insertAdjacentHTML('beforeend', html);
-document.body.insertAdjacentHTML('beforeend', '<p class="bld">Non-prefixed properties</p><textarea>'+JSON.stringify(stylesNonPre)+'</textarea>');
+document.body.insertAdjacentHTML('beforeend', '<p class="bld">Non-prefixed properties</p><textarea>'+JSON.stringify(unprefixed)+'</textarea>');
 document.body.insertAdjacentHTML('beforeend', '<p class="bld">Unused properties</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
 document.body.insertAdjacentHTML('beforeend', '<p class="bld">All properties</p><textarea>'+JSON.stringify(allStylesArr)+'</textarea>');
 //	console.log(styleObj);
