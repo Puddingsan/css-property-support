@@ -70,7 +70,7 @@ textarea { width:100%;height: 25em;}
 #filterbox {
 	position:fixed;
 	right:1em;
-	top:5em;
+	top:1em;
 	display:inline-block;
 	background-color: #ddd;
 	border: 2px solid #999;
@@ -84,24 +84,37 @@ tr.hide {display:none}
 </head>
 
 <body>
+<h1>CSS property support in modern browsers</h1>
+<p>The compatibility table below is compiled with data from the most up-to-date versions of browsers available. If there is a property not supported by any these browsers then it will not appear on the list.</p>
+<p>Rather than using your browser's built-in search function, you will notice the properties filter on the right hand side. Type a property name (or part of) to show specific ones. Furthermore, you can use a regular expression in your query - for example:
+<ul>
+<li>to see only prefixed font-related properties, type <strong>-font</strong></li>
+<li>to see only unprefixed font-related properties, type <strong>^font</strong></li>
+</ul>
 <div id="filterbox">
-	<p>properties filter</p>
+	<strong>properties filter</strong><br>
 	<input type="text" id="filter">
 </div>
 <script>
+function loadFilter(val) {
+	$('filter').value=val;
+}
 // filter properties
-$('filter').addEventListener('keyup', function() {
-	([]).slice.call(document.querySelectorAll('table tbody tr td:first-child')).forEach(function(cell){
-		// check performance?
-//		if ($('filter').value.length>1) cell.parentNode.style.display = (new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? 'table-row' : 'none';
-//		else cell.parentNode.style.display = 'table-row';
-		rowCls = cell.parentNode.classList;
-		if ($('filter').value.length>1) {
-			(new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? rowCls.remove('hide') : rowCls.add('hide');
-		} else {
-			rowCls.remove('hide');
-		}
-	});
+document.addEventListener("DOMContentLoaded", function() {
+	tableRows = ([]).slice.call(document.querySelectorAll('table tbody tr td:first-child'));
+	$('filter').addEventListener('input', function() {
+		tableRows.forEach(function(cell){
+			// check performance?
+	//		if ($('filter').value.length>1) cell.parentNode.style.display = (new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? 'table-row' : 'none';
+	//		else cell.parentNode.style.display = 'table-row';
+			rowCls = cell.parentNode.classList;
+			if ($('filter').value.length>1) {
+				(new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? rowCls.remove('hide') : rowCls.add('hide');
+			} else {
+				rowCls.remove('hide');
+			}
+		});
+	}, false);
 }, false);
 // compile support object from styleData
 var styleObj = {}, allStylesArr=[], unusedProps=[], data, br, bb, p, pp, prop;
@@ -112,11 +125,8 @@ for (br in styleData) {
 	for (p in data) {
 //		console.log(data[p]);
 		camelized = (""+data[p]).camelize();
-//		tostring = ""+p.charAt(0).toLowerCase()+p.substring(1);
 		tostring = ""+p;
-//		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="") allStylesArr.push(camelized);
 		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(firstToLower(camelized));
-//		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(firstToLower(tostring), allStylesArr) && p!=="") allStylesArr.push(tostring);
 		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(tostring);
 	}
 }
@@ -139,21 +149,6 @@ for (bb in styleData) {
 //		else console.log({browser:br, value:data[p]});
 	}
 }
-/*
-// show all properties of compiled style object
-for (prop in styleObj) {
-	propStr = ""+prop.jsStyleToCss();
-	console.log(propStr+": ", styleObj[prop])
-}
-// remove errors / empty values (difference between Webkit- and webkit- (?) )
-for (prop in styleObj) {
-	if (styleObj[prop].length==0 && styleObj[prop]!=="") {
-		console.log(prop+": "+ JSON.stringify(styleObj[prop]));
-		unusedProps.push(prop.jsStyleToCss());
-		delete styleObj[prop];
-	}
-}
-*/
 function firstToLower(str) {
 	return str.charAt(0).toLowerCase() + str.substring(1);
 }
@@ -187,8 +182,10 @@ function getPrefixedAndUnprefixedValues(prp) {
 html = '<table><thead><tr><th>property</th><th>Chrome</th><th>Firefox</th><th>Opera</th><th>IE</th><th>Safari</th></tr></thead><tbody>';
 for (prop in styleObj) {
 	propsArr = styleObj[prop];
+	console.log(prop, ": ", propsArr);
 	propStr = ""+prop.jsStyleToCss();
 	irregValues = false;
+	// drill down array to check value compatibility
 	if (propsArr.length>1) {
 		valsArr = [];
 		propsArr.forEach(function(prp){
@@ -222,7 +219,7 @@ document.body.insertAdjacentHTML('beforeend', '<p class="bld">Non-prefixed prope
 //	document.body.insertAdjacentHTML('beforeend', '<p class="bld">Unused properties</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
 document.body.insertAdjacentHTML('beforeend', '<p class="bld">All properties</p><textarea>'+JSON.stringify(allStylesArr)+'</textarea>');
 */
-//	console.log(styleObj);
+console.log(styleObj);
 </script>
 </body>
 </html>
