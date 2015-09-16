@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>CSS style support</title>
+<title>CSS properties support</title>
 <link href="http://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
 <style type="text/css">
@@ -10,6 +10,7 @@ body {
 	font-family: Lato, sans-serif, arial;
 }
 table {
+	width:100%;
 /*	border-collapse:collapse;	*/
 }
 th, td {
@@ -66,13 +67,42 @@ tr td.irreg {
 }
 textarea { width:100%;height: 25em;}
 .bld {font-weight:bold}
+#filterbox {
+	position:fixed;
+	right:1em;
+	top:5em;
+	display:inline-block;
+	background-color: #ddd;
+	border: 2px solid #999;
+	border-radius: 0.5em;
+	padding: 0.5em;
+}
+tr.hide {display:none}
 </style>
 <script type="text/javascript" src="src/common.js"> </script>
 <script type="text/javascript" src="src/styleData.js"> </script>
 </head>
 
 <body>
+<div id="filterbox">
+	<p>properties filter</p>
+	<input type="text" id="filter">
+</div>
 <script>
+// filter properties
+$('filter').addEventListener('keyup', function() {
+	([]).slice.call(document.querySelectorAll('table tbody tr td:first-child')).forEach(function(cell){
+		// check performance?
+//		if ($('filter').value.length>1) cell.parentNode.style.display = (new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? 'table-row' : 'none';
+//		else cell.parentNode.style.display = 'table-row';
+		rowCls = cell.parentNode.classList;
+		if ($('filter').value.length>1) {
+			(new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? rowCls.remove('hide') : rowCls.add('hide');
+		} else {
+			rowCls.remove('hide');
+		}
+	});
+}, false);
 // compile support object from styleData
 var styleObj = {}, allStylesArr=[], unusedProps=[], data, br, bb, p, pp, prop;
 var vendorAnomalies = [];
@@ -84,8 +114,10 @@ for (br in styleData) {
 		camelized = (""+data[p]).camelize();
 //		tostring = ""+p.charAt(0).toLowerCase()+p.substring(1);
 		tostring = ""+p;
-		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="") allStylesArr.push(camelized);
-		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="") allStylesArr.push(tostring);
+//		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="") allStylesArr.push(camelized);
+		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(firstToLower(camelized));
+//		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(firstToLower(tostring), allStylesArr) && p!=="") allStylesArr.push(tostring);
+		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(tostring);
 	}
 }
 allStylesArr.sort();
@@ -93,8 +125,8 @@ unprefixed = [];
 allStylesArr.forEach(function(st){
 	if (!/^(webkit|Webkit|O|o[A-Z]|Ms|ms|Moz|moz|apple|Apple|Wap).*?$/.test(st)) unprefixed.push(st);
 });
-console.log(allStylesArr);
-console.log(unprefixed);
+//	console.log(allStylesArr);
+//	console.log(unprefixed);
 allStylesArr.forEach(function(asa) {
 	styleObj[asa] = [];
 });
@@ -113,7 +145,6 @@ for (prop in styleObj) {
 	propStr = ""+prop.jsStyleToCss();
 	console.log(propStr+": ", styleObj[prop])
 }
-*/
 // remove errors / empty values (difference between Webkit- and webkit- (?) )
 for (prop in styleObj) {
 	if (styleObj[prop].length==0 && styleObj[prop]!=="") {
@@ -121,6 +152,10 @@ for (prop in styleObj) {
 		unusedProps.push(prop.jsStyleToCss());
 		delete styleObj[prop];
 	}
+}
+*/
+function firstToLower(str) {
+	return str.charAt(0).toLowerCase() + str.substring(1);
 }
 function getSupportedStatus(propSupArr, bProp) {
 	retVal = false;
@@ -137,8 +172,7 @@ function getDefaultValue(propDefArr, brProp) {
 	retVal = "N/A";
 	propDefArr.forEach(function(prv){
 		if (brProp==prv.browser) {
-			strVal = (""+prv.value).dasherize();
-			retVal = strVal;
+			retVal = ""+prv.value;
 		}
 	});
 	return retVal;
@@ -168,22 +202,26 @@ for (prop in styleObj) {
 //		console.log(prop, ": ", valsArr);
 		if (valsArr.length>1) irregValues = true;
 	}
-	html += '<tr>'+
-	// property name
-	'<td'+(irregValues === true ?  ' class="irreg"' : '')+'>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>';
-	["Chrome", "Firefox", "Opera", "IE", "Safari"].forEach(function(bn){
-		supStatus = getSupportedStatus(propsArr, bn);
-		defVal = getDefaultValue(propsArr, bn);
-		html += '<td class="'+supStatus+' '+bn.toLowerCase()+'">'+((supStatus==true && defVal=="") ? "\"\"" : defVal)+'</td>';
-	});
-	html += '</tr>';
+	if (styleObj[prop].length>0) {
+		html += '<tr>'+
+		// property name
+		'<td'+(irregValues === true ?  ' class="irreg"' : '')+'>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>';
+		["Chrome", "Firefox", "Opera", "IE", "Safari"].forEach(function(bn){
+			supStatus = getSupportedStatus(propsArr, bn);
+			defVal = getDefaultValue(propsArr, bn);
+			html += '<td class="'+supStatus+' '+bn.toLowerCase()+'">'+((supStatus==true && defVal=="") ? "\"\"" : defVal)+'</td>';
+		});
+		html += '</tr>';
+	}
 //	console.log(propStr+": ", styleObj[prop])
 }
 html += '</tbody></table>';
 document.body.insertAdjacentHTML('beforeend', html);
+/*
 document.body.insertAdjacentHTML('beforeend', '<p class="bld">Non-prefixed properties</p><textarea>'+JSON.stringify(unprefixed)+'</textarea>');
-document.body.insertAdjacentHTML('beforeend', '<p class="bld">Unused properties</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
+//	document.body.insertAdjacentHTML('beforeend', '<p class="bld">Unused properties</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
 document.body.insertAdjacentHTML('beforeend', '<p class="bld">All properties</p><textarea>'+JSON.stringify(allStylesArr)+'</textarea>');
+*/
 //	console.log(styleObj);
 </script>
 </body>
