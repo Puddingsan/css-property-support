@@ -1,0 +1,456 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>CSS properties support</title>
+<link href="http://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
+<style type="text/css">
+body {
+	overflow-y: scroll;
+}
+body, input {
+	font-family: Lato, sans-serif, arial;
+}
+body > p, body > ul {
+	margin-right: 15em;
+}
+table {
+	width:100%;
+/*	border-collapse:collapse;	*/
+}
+th, td {
+	padding: 0.4em;
+}
+table thead th {
+	font-family: "Open Sans", sans-serif, arial;
+	width:16%;
+}
+tbody tr td:first-child {
+	font-weight:bold;
+}
+tbody td {
+	font-size: 0.8em;
+	font-family: Lato, sans-serif, arial;
+	padding-left: 28px;
+}
+tbody tr.allsame td {
+/*	background: #0D0 url(none) no-repeat 3% center!important;	*/
+	color: #030;
+	background-color: #9D9!important;
+}
+tbody tr.allsame td:first-child {
+	background: #9D9 url(img/accept.png) no-repeat 3% center!important;
+}
+tbody td.false {
+	background-color:#fee;
+	color:#600;
+	text-align:center;
+	padding-left: 0.4em;
+}
+tbody td.true {
+	background-color:#efe;
+}
+tbody tr:hover td {
+/*	background-color:#ddf;	*/
+	color:#024;
+}
+tbody tr:hover td {
+	background: #ddddff none no-repeat 3% center;
+}
+tbody tr:hover td.true.chrome {
+	background-image: url(img/chrome_16x16.png);
+}
+tbody tr:hover td.true.firefox {
+	background-image: url(img/firefox_16x16.png);
+}
+tbody tr:hover td.true.ie {
+	background-image: url(img/ie_16x16.png);
+}
+tbody tr:hover td.true.safari {
+	background-image: url(img/safari_16x16.png);
+}
+tbody tr:hover td.true.opera {
+	background-image: url(img/opera_16x16.png);
+}
+tbody tr:hover td.false {
+	background: #ffeeee none!important;
+	opacity: 0.2;
+}
+tr td.irreg {
+	background-color:#ff6;
+}
+textarea { width:100%;height: 25em;}
+.bld {font-weight:bold}
+#filterbox {
+	position:fixed;
+	right:1em;
+	top:1em;
+	display:inline-block;
+	background-color: #eee;
+	border: 2px solid #999;
+	border-radius: 0.5em;
+	padding: 0.5em;
+}
+tr.hide {display:none}
+input#filter {
+	border: 0.5em solid transparent;
+	padding: 0.2em;
+}
+input#filter.noregexp {background-color:#fff;color:#222}
+input#filter.goodregexp {background-color:#f6fff6;color:#050}
+input#filter.badregexp {background-color:#fdd;color:#933;border-color:#a99}
+</style>
+<script type="text/javascript" src="src/common.js"> </script>
+<script type="text/javascript" src="src/styleData.js"> </script>
+</head>
+
+<body>
+<h1>CSS property support in modern browsers</h1>
+<p>The compatibility table below is compiled with data from the most up-to-date versions of browsers available. If there is a property not supported by any these browsers then it will not appear on the list.<!-- The default values displayed are obtained by calling this piece of code: <code></code>--></p>
+<p>Rather than using your browser's built-in search function, you will notice the properties filter on the right hand side. Type a property name (or part of) to show specific ones. Furthermore, you can use regular expressions in your query (and I have built a little regExp syntax checker into the text box, green for good and red for bad syntax). For example:
+<ul>
+<li>to see only prefixed font-related properties, type <strong>-font</strong></li>
+<li>to see only unprefixed font-related properties, type <strong>^font</strong></li>
+<li>to see only those font-related properties that occur at least twice, type <strong>font($|[-a-z]+$)</strong></li>
+<li>to see which webkit prefixed  properties are used only by Opera 12.17 on Windows, type <strong>webkit.*Opera</strong> with the appropriate settings</li>
+</ul>
+<div id="filterbox">
+	<strong>properties filter</strong>
+    <p><input type="text" id="filter" placeholder="text or regex"></p>
+    <p><label for="case"><input type="checkbox" id="case" /> case-insensitive</label></p>
+    <span id="numprops"></span>
+</div>
+<script>
+//	initialise data object in session storage
+// object tree is: platform, browser, version
+if (!window.sessionStorage) {
+	throw new Error("This programme reqiures a browser that supports the Storage API,");
+} else {
+	var sS=sessionStorage, obj={
+/*		win: {
+			CHR: {},
+			FF: {},
+			FFED: {},
+			OPE: {},
+			IE: {},
+			SAF: {}
+		}
+*/
+	};
+	sS.setObject("styleData", obj);
+	sS.setObject("styleDataVersions", obj);
+}
+// query string variables
+var qsObj = parseQueryStringToObj(), debug = !!qsObj.debug, sS=sessionStorage;
+/*
+// testing function only
+var Pudding = {};
+objToVars(qsObj, "Pudding");
+*/
+
+function getRecordVersions() {
+	var oReq = new XMLHttpRequest(), url = "php/styleDataServer.php?action=getversions";
+	oReq.open("GET", url, true);
+	oReq.responseType = "text";
+	oReq.addEventListener("readystatechange", function(event) {
+		if (oReq.readyState == 4) {
+			var aObj = JSON.parse(oReq.response);
+//			console.log(aObj);
+			if (typeof aObj.error=='undefined') {
+				vObj = {};
+				aObj.forEach(function(ao) {
+					if (!vObj[ao.platform]) vObj[ao.platform] = {};
+					if (!vObj[ao.platform][ao.browser]) vObj[ao.platform][ao.browser] = {};
+					if (!vObj[ao.platform][ao.browser]['version']) {
+						vObj[ao.platform][ao.browser]['version'] = [];
+					}
+					vObj[ao.platform][ao.browser]['version'].push(ao.version);
+			});
+				sS.setObject("styleDataVersions", vObj);
+			} else {
+				console.error('Data fetching returned an error: '+aObj.error);
+			}
+		}
+	}, false);
+	oReq.send();
+
+}
+
+var getStyleInfo =function(platform, browser, version) {
+	var p=platform||'win', b=browser||'CHR', v=version||'latest';
+	var styleData = sS.getObject("styleData");
+	if (!styleData[p] || !styleData[p][b]) {
+		var oReq = new XMLHttpRequest(), url = "php/styleDataServer.php?action=getrecord&platform="+p+"&browser="+b+"&version="+v;
+		oReq.open("GET", url, true);
+		oReq.responseType = "text";
+		oReq.addEventListener("readystatechange", function(event) {
+			if (oReq.readyState == 4) {
+				var aObj = JSON.parse(oReq.response);
+//				console.log(aObj);
+				if (typeof aObj.error=='undefined') {
+					if (!styleData[p]) styleData[p] = {};
+					if (!styleData[p][b]) styleData[p][b] = {};
+					if (!styleData[p][b][aObj.version]) styleData[p][b][aObj.version] =
+					{
+						json: aObj.json,
+	//					uastring: aObj.uastring,
+	//					timestamp: aObj.timestamp,
+						label: aObj.label
+					}
+					sS.setObject("styleData", styleData);
+				} else {
+					console.error('Data fetching returned an error: '+aObj.error);
+				}
+			}
+		}, false);
+		oReq.send();
+	}
+}
+
+if (debug && objLen(qsObj)>0) {
+	// show imported vars from query string and their types
+	console.log("query string object: ", qsObj);
+	console.log("-----------------------------\nquery string values and types\n-----------------------------");
+	for (q in qsObj) {
+		console.info(q, ':', (typeof qsObj[q]=="string" ? '"'+qsObj[q]+'"' : qsObj[q]), '('+typeof qsObj[q]+')');
+	}
+	console.log("-----------------------------");
+}
+// find and load a historic dataset as indicated by a GET parameter
+function recordVersion(bname) {
+	if (qsObj) {
+	// record is selected record set for browser - returns 'latest' or version number
+	bLo = ""+bname.toLowerCase();
+//	check for existence in query string and the value is in stored stats
+	return (bLo in qsObj && in_array(""+qsObj[bLo], recordVersions[bname])) ? qsObj[bLo] : 'latest';
+	} else {
+		return 'latest';
+	}
+}
+function loadFilter(val) {
+	$('filter').value=val;
+}
+// filter properties
+document.addEventListener("DOMContentLoaded", function() {
+	getRecordVersions();
+	// testing
+	setTimeout(function() {
+	vObj = sS.getObject('styleDataVersions');
+	operaVersions = vObj['win']['OPE'].version;
+	operaVersions.sort();
+	console.log("opera versions highest:", operaVersions[operaVersions.length-1]);
+	console.log("opera versions lowest:", operaVersions[0]);
+	}, 2000);
+	// end testing
+	// locate the first <td> child element of every <tr> element
+	targetCells = ([]).slice.call(document.querySelectorAll('table tbody tr td:first-child'));
+	function filterRows() {
+		rowcount = 0;
+		$('numprops').textContent = '';
+		flags = $('case').checked ? "gi" : "g";
+		flt = $('filter');
+		fVal = flt.value;
+		try {
+		targetCells.forEach(function(cell){
+			// check performance?
+	//		if ($('filter').value.length>1) cell.parentNode.style.display = (new RegExp($('filter').value, 'g').test(cell.childNodes[0].nodeValue)) ? 'table-row' : 'none';
+	//		else cell.parentNode.style.display = 'table-row';
+			rowCls = cell.parentNode.classList;
+			if (fVal.length>1) {
+				flt.className='goodregexp';
+				flt.removeAttribute("title");
+				if (new RegExp(fVal, flags).test(cell.childNodes[0].nodeValue)) {
+					rowCls.remove('hide');
+					rowcount++;
+				} else {
+					rowCls.add('hide');
+				}
+			} else {
+				flt.className='noregexp';
+				flt.removeAttribute("title");
+				//	show all rows if only one character
+				rowCls.remove('hide');
+				rowcount++;
+			}
+		});
+		} catch(e) {
+			if (e instanceof SyntaxError) {
+				flt.className='badregexp';
+				flt.title='bad syntax in regular expression';
+			}
+		}
+		$('numprops').inject('total rows: <strong>'+rowcount+'</strong>')
+	}
+	$('filter').addEventListener('input', filterRows, false);
+	$('case').addEventListener('change', filterRows, false);
+}, false);
+// prepare stats according to platform
+var platform = qsObj.platform || "win", styleData = styleDataObj[platform];
+// compile support object from styleData
+var styleObj = {}, allStylesArr=[], unusedProps=[], data, br, bb, p, pp, prop;
+var allMatched = [];
+var vendorAnomalies = [];
+var recordVersions = {};
+for (br in styleData) {
+//	if (debug) console.log("browser name: ", br);
+	recordVersions[br] = Object.keys(styleData[br]);
+	// recordID is selected record set for browser - latest or version number passed via GET
+	recordID = recordVersion(br);
+	data = styleData[br][recordID];
+	for (p in data) {
+		// show values with upper case
+		if (/[A-Z]/.test(data[p]) && debug && !/RGB|Times/.test(data[p])) console.log('uppercase value detected:', "["+br+"]", data[p], 'on', p);
+		camelized = (""+data[p]).camelize();
+		tostring = ""+p;
+		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(firstToLower(camelized));
+		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(tostring);
+	}
+}
+if (debug) console.info("recordVersions obj : ", recordVersions)
+allStylesArr.sort();
+unprefixed = [];
+allStylesArr.forEach(function(st){
+	if (!/^(webkit|Webkit|O|o[A-Z]|Ms|ms|Moz|moz|apple|Apple|Wap).*?$/.test(st)) unprefixed.push(st);
+});
+allStylesArr.forEach(function(asa) {
+	styleObj[asa] = [];
+});
+// now populate the styleObj with values from styleData
+for (bb in styleData) {
+	// record is selected record set for browser - latest or version number passed via GET
+	recordID = recordVersion(bb);
+	data = styleData[bb][recordID];
+	for (pp in data) {
+		tostring = ""+pp;
+		// x-browser float issue
+		tostring = (tostring=="cssFloat") ? "float" : (tostring=="styleFloat") ? "float" : tostring;
+		if (styleObj[pp] && tostring.indexOf("-")<0 && !pp.match(/\d+/) && !in_array({browser:bb, value:data[pp]}, styleObj[tostring])) styleObj[tostring].push({browser:bb, value:data[pp]});
+//		else console.log({browser:br, value:data[p]});
+	}
+}
+function firstToLower(str) {
+	return str.charAt(0).toLowerCase() + str.substring(1);
+}
+function getSupportedStatus(propSupArr, bProp) {
+	retVal = false;
+	found = false;
+	propSupArr.forEach(function(pr){
+		if (found===false && bProp==pr.browser) {
+			retVal = true;
+			found=true;
+		}
+	});
+	return retVal;
+}
+function getDefaultValue(propDefArr, brProp) {
+	retVal = "N/A";
+	propDefArr.forEach(function(prv){
+		if (brProp==prv.browser) {
+			retVal = ""+prv.value;
+		}
+	});
+	return retVal;
+}
+function getPrefixedAndUnprefixedValues(prp, brwsr) {
+	allProps = unprefixed;
+	foundPreProps = [];
+	for (st in styleObj) {
+		if (prp.toLowerCase().match(new RegExp(st+'$', 'i'))) {
+			console.log('matched '+st+' with '+prp);
+			styleObj[st].forEach(function(s){
+				if (s.browser==brwsr) foundPreProps.push({prop:st, value: s.value});
+			});
+		}
+	}
+	/*
+	for (d in styleData) {
+		recordID = recordVersion(d);
+		dta = styleData[d][recordID];
+	}
+	*/
+	return foundPreProps;
+}
+orderObj = {
+	Chrome: 'CHR',
+	Firefox: 'FF',
+	Opera: 'OPE',
+	IE: 'IE',
+	Safari: 'SAF'
+}
+// ["Chrome", "Firefox", "Opera", "IE", "Safari"]
+tableOrder = Object.keys(orderObj);
+html = '<table><thead><tr><th>property</th>';
+t=0;
+tableOrder.forEach(function(thLabel, idx) {
+//	console.log("initialise data fetching for "+idx);
+	setTimeout(function() {
+		getStyleInfo('win', orderObj[thLabel], 'latest');
+		if (idx==tableOrder.length-1) console.log("last data fetch request sent");
+//		console.log("finished data fetching for "+idx);
+	}, t*500);
+	t++;
+	html += '<th>'+thLabel+'</th>';
+});
+html += '</tr></thead><tbody>';
+for (prop in styleObj) {
+	propsArr = styleObj[prop];
+//	console.log(prop, ": ", propsArr);
+	propStr = ""+prop.jsStyleToCss();
+	irregValues = false;
+	sameValues = false;
+	// drill down array to check for irregular default value
+	if (propsArr.length>1) {
+		valsArr = [];
+		propsArr.forEach(function(prp){
+			valsArr.push(prp.value);
+		});
+		for(var i = valsArr.length - 1; i > 0; i--) {
+			if(valsArr[i] === valsArr[0]) {
+			   valsArr.splice(i, 1);
+			}
+		}
+//		console.log(prop, ": ", valsArr);
+		if (valsArr.length>1) irregValues = true;
+	}
+	// check for universally matched values
+	if (propsArr.length>4) {
+		var tmpArr = styleObj[prop];
+		baseVal = tmpArr[0].value;
+		matchCount=0;
+		tmpArr.forEach(function(ta){
+			if (ta.value==baseVal) matchCount++;
+		});
+		if (matchCount==5) {
+			sameValues = true;
+			allMatched.push(prop);
+		}
+	}
+	if (propsArr.length>0) {
+		html += '<tr'+(sameValues === true ?  ' class="allsame"' : '')+'>'+
+		// property name
+		'<td'+(irregValues === true ?  ' class="irreg"' : '')+'>'+(/^moz/.test(propStr) ? "-" : "")+propStr+(propsArr.length==1 ? ' ('+propsArr[0].browser+')' : '')+'</td>';
+		// columns
+		tableOrder.forEach(function(bn){
+//			console.log(getPrefixedAndUnprefixedValues(prop, bn));
+			supStatus = getSupportedStatus(propsArr, bn);
+			defVal = getDefaultValue(propsArr, bn);
+			html += '<td class="'+supStatus+' '+bn.toLowerCase()+'">'+((supStatus==true && defVal=="") ? "\"\"" : defVal)+'</td>';
+		});
+		html += '</tr>';
+	}
+//	console.log(propStr+": ", styleObj[prop])
+}
+html += '</tbody></table>';
+inject(html);
+if (debug) {
+	inject('<p class="bld">Non-prefixed properties ('+unprefixed.length+')</p><textarea>'+JSON.stringify(unprefixed)+'</textarea>');
+//	inject('<p class="bld">Unused properties ('+unusedProps.length+')</p><textarea>'+JSON.stringify(unusedProps)+'</textarea>');
+	inject('<p class="bld">All properties ('+allStylesArr.length+')</p><textarea>'+JSON.stringify(allStylesArr)+'</textarea>');
+	inject('<p class="bld">Universal matching default values ('+allMatched.length+')</p><textarea>'+JSON.stringify(allMatched)+'</textarea>');
+	console.info("styleObj: ", styleObj);
+}
+// ^(padding|page|fill|box-s)-|^overflow($|-(x|y))|^border-(t|b|r|l)[a-z]+-|(max|min)-(h|w)|^background-(a|cl|i|o|p|r)[a-z]+$
+</script>
+</body>
+</html>
