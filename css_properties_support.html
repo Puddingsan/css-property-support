@@ -128,15 +128,6 @@ if (!window.sessionStorage) {
 	throw new Error("This programme reqiures a browser that supports the Storage API,");
 } else {
 	var sS=sessionStorage, obj={
-/*		win: {
-			CHR: {},
-			FF: {},
-			FFED: {},
-			OPE: {},
-			IE: {},
-			SAF: {}
-		}
-*/
 	};
 	sS.setObject("styleData", obj);
 	sS.setObject("styleDataVersions", obj);
@@ -303,7 +294,7 @@ for (br in styleData) {
 		if (/[A-Z]/.test(data[p]) && debug && !/RGB|Times/.test(data[p])) console.log('uppercase value detected:', "["+br+"]", data[p], 'on', p);
 		camelized = (""+data[p]).camelize();
 		tostring = ""+p;
-		if (!in_array(camelized, allStylesArr) && p.match(/\d+/) && data[p]!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(firstToLower(camelized));
+		if (!in_array(firstToLower(camelized), allStylesArr) && p.match(/\d+/) && data[p]!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(firstToLower(camelized));
 		else if (tostring.indexOf("-")<0 && !p.match(/\d+/) && !in_array(tostring, allStylesArr) && p!=="" && tostring.substring(0, 3)!=="moz") allStylesArr.push(tostring);
 	}
 }

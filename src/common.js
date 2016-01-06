@@ -1,3 +1,21 @@
+// little experiment to test for features
+var windowFeatures = ["localStorage", "sessionStorage", "JSON", "XMLHttpRequest", "DOMParser"],
+	documentFeatures = ["querySelector", "querySelectorAll", "defaultView", "implementation", "documentElement"],
+	features = windowFeatures.concat(documentFeatures);
+features.forEach(function(feature){
+	baseObj = in_array(feature, windowFeatures) ? window : document;
+	console.log(baseObj.constructor);
+	if (typeof baseObj[feature] === "undefined") throw new Error(feature+" is not available");
+	/*
+	try {
+		typeof baseObj[feature] !== "undefined";
+		console.log(feature+": "+typeof baseObj[feature])
+	} catch(e) {
+		throw new Error(feature+" is not available");
+	}
+	*/
+});
+
 // from Prototypejs
 if (!String.dasherize) Object.defineProperty(String.prototype, "dasherize", {
 	enumerable: false,
@@ -67,6 +85,14 @@ Storage.prototype.getObject = function(key) {
 
 /////////////// misc own funcs ////////////////////
 
+if (!Element.getStyle) Object.defineProperty(Element.prototype, "getStyle", {
+	enumerable: false,
+	writable: true,
+	value: function(prop, pseudo) {
+		return getStyle(this, prop, pseudo)
+	}
+});
+
 if (!Element.inject) Object.defineProperty(Element.prototype, "inject", {
 	enumerable: false,
 	writable: true,
@@ -101,6 +127,11 @@ function in_array(needle, haystack) {
 		if (n===needle) retVal = true;
 	});
 	return retVal;
+}
+
+// originaly for converting things like DOMnodeMap to iterable array
+function nodesToArray(collection) {
+	return ([]).slice.call(collection);
 }
 
 function wordInString(needle, haystack, flags) {
